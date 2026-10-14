@@ -1,0 +1,90 @@
+# Visual theme modelled on the Citral AI dashboard: warm off-white / near-black
+# surfaces, hairline borders, a single lime accent, Geist type.
+
+[theme]
+font = "Geist:https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap, sans-serif"
+headingFont = "Geist:https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap, sans-serif"
+codeFont = "Geist Mono:https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap, monospace"
+baseFontSize = 14
+baseRadius = "8px"
+buttonRadius = "8px"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.light]
+# Darker olive for checkboxes, tabs, toggles and focus rings; primary
+# buttons stay lime via CSS in views/ui.py.
+primaryColor = "#4d7c0f"
+backgroundColor = "#f5f5f2"
+secondaryBackgroundColor = "#f0f0ec"
+textColor = "#161715"
+borderColor = "#e3e3de"
+dataframeBorderColor = "#e3e3de"
+dataframeHeaderBackgroundColor = "#f0f0ec"
+linkColor = "#4d7c0f"
+greenColor = "#2f7d32"
+greenBackgroundColor = "#e6f4e7"
+greenTextColor = "#2f7d32"
+orangeColor = "#9a5b00"
+orangeBackgroundColor = "#fdf1dc"
+orangeTextColor = "#9a5b00"
+yellowColor = "#9a5b00"
+yellowBackgroundColor = "#fdf1dc"
+yellowTextColor = "#9a5b00"
+redColor = "#b3261e"
+redBackgroundColor = "#fbe7e6"
+redTextColor = "#b3261e"
+blueColor = "#1d5fa8"
+blueBackgroundColor = "#e5eefb"
+blueTextColor = "#1d5fa8"
+grayColor = "#8b8d87"
+grayBackgroundColor = "#f0f0ec"
+grayTextColor = "#585a55"
+
+[theme.light.sidebar]
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f0ec"
+textColor = "#161715"
+borderColor = "#e3e3de"
+primaryColor = "#4d7c0f"
+
+[theme.dark]
+primaryColor = "#a3e635"
+backgroundColor = "#0e100e"
+secondaryBackgroundColor = "#1c201c"
+textColor = "#f1f2ee"
+borderColor = "#262b26"
+dataframeBorderColor = "#262b26"
+dataframeHeaderBackgroundColor = "#1c201c"
+linkColor = "#bef264"
+greenColor = "#7ed684"
+greenBackgroundColor = "#16301a"
+greenTextColor = "#7ed684"
+orangeColor = "#f5b95a"
+orangeBackgroundColor = "#3a2a0d"
+orangeTextColor = "#f5b95a"
+yellowColor = "#f5b95a"
+yellowBackgroundColor = "#3a2a0d"
+yellowTextColor = "#f5b95a"
+redColor = "#f28b82"
+redBackgroundColor = "#3d1a17"
+redTextColor = "#f28b82"
+blueColor = "#8ab8f2"
+blueBackgroundColor = "#152741"
+blueTextColor = "#8ab8f2"
+grayColor = "#727770"
+grayBackgroundColor = "#1c201c"
+grayTextColor = "#a9ada5"
+
+[theme.dark.sidebar]
+backgroundColor = "#151815"
+secondaryBackgroundColor = "#1c201c"
+textColor = "#f1f2ee"
+borderColor = "#262b26"
+primaryColor = "#a3e635"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
