@@ -168,6 +168,17 @@ div[data-testid="stForm"] { border-color: var(--pt-border); border-radius: 10px;
 .pt-user-meta { font-size: .72rem; color: var(--pt-text-3); }
 
 .pt-login { margin-top: 8vh; }
+
+.pt-field { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--pt-border); }
+.pt-field:last-child { border-bottom: 0; }
+
+/* Destructive actions: red outline trigger, solid red confirm (keyed buttons). */
+.st-key-open_delete_user button { color: var(--pt-error) !important; border-color: var(--pt-error) !important; }
+.st-key-open_delete_user button:hover { background: var(--pt-error-bg) !important; }
+.st-key-confirm_delete_user button { background: #b3261e !important; border-color: #b3261e !important; }
+.st-key-confirm_delete_user button, .st-key-confirm_delete_user button * { color: #ffffff !important; }
+.st-key-confirm_delete_user button:disabled { opacity: .45; }
+.pt-danger { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--pt-border); }
 </style>
 """
 

@@ -246,3 +246,42 @@ def test_admin_can_assign_to_self_and_work_on_it(session, admin, alice):
     submit_month(session, admin.id, OCT)
     review_month(session, admin, admin.id, OCT, approve=True)
     assert review_state(session, admin.id, OCT) == APPROVED
+
+
+def test_delete_user_removes_their_data_and_keeps_others(session, admin, alice, bob):
+    from core.models import MonthlyReview, Task, User
+
+    second_admin = svc.create_user(session, "boss2", "Second Boss", "adminpass2", "admin")
+    add_task(session, alice.id, D, "Alice's own task")
+    assign_task(session, second_admin, [alice.id, bob.id], "From second admin", today=D)
+    submit_month(session, bob.id, OCT)
+    review_month(session, second_admin, bob.id, OCT, approve=True)
+    submit_month(session, alice.id, OCT)
+
+    assert svc.user_footprint(session, alice.id) == {"tasks": 2, "reviews": 1, "assigned_to_others": 0, "reviewed": 0}
+    removed = svc.delete_user(session, alice.id, actor=admin)
+    assert removed["tasks"] == 2
+    assert session.get(User, alice.id) is None
+    assert get_tasks(session, user_id=alice.id) == []
+    assert svc.get_review(session, alice.id, OCT) is None
+
+    # Deleting the second admin keeps Bob's task and approved report, minus the link to them.
+    svc.delete_user(session, second_admin.id, actor=admin)
+    (bob_task,) = get_tasks(session, user_id=bob.id)
+    assert bob_task.assigned_by is None
+    bob_review = svc.get_review(session, bob.id, OCT)
+    assert bob_review.state == APPROVED and bob_review.reviewer_id is None
+    assert session.query(Task).count() == 1 and session.query(MonthlyReview).count() == 1
+
+
+def test_delete_user_guards(session, admin, alice):
+    with pytest.raises(ServiceError, match="Only admins"):
+        svc.delete_user(session, admin.id, actor=alice)
+    with pytest.raises(ServiceError, match="your own account"):
+        svc.delete_user(session, admin.id, actor=admin)
+    other = svc.create_user(session, "boss2", "Second Boss", "adminpass2", "admin")
+    svc.set_user_active(session, admin.id, False, actor=other)
+    with pytest.raises(ServiceError, match="one active admin"):
+        svc.delete_user(session, other.id, actor=admin)  # admin is inactive but object still admin
+    with pytest.raises(ServiceError, match="not found"):
+        svc.delete_user(session, 9999, actor=other)

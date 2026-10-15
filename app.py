@@ -9,7 +9,7 @@ from core.auth import authenticate
 from core.config import org_name
 from core.db import get_session
 from core.models import ROLE_ADMIN
-from views import assign_tasks, manage_users, my_report, team_review
+from views import account, assign_tasks, manage_users, my_report, team_review
 from views.common import current_user, flash, login, logout, show_flash
 from views.ui import brand, card, hide_sidebar, inject_css, nav_label, user_card
 
@@ -106,6 +106,7 @@ def main() -> None:
 
     report = st.Page(my_report.page, title="My report", icon=":material/table_view:", url_path="report",
                      default=not user.is_admin)
+    my_account = st.Page(account.page, title="My account", icon=":material/account_circle:", url_path="account")
     if user.is_admin:
         sections = {
             "Team": [
@@ -113,10 +114,10 @@ def main() -> None:
                 st.Page(assign_tasks.page, title="Assign tasks", icon=":material/assignment_add:", url_path="assign"),
                 st.Page(manage_users.page, title="Manage users", icon=":material/group:", url_path="users"),
             ],
-            "Personal": [report],
+            "Personal": [report, my_account],
         }
     else:
-        sections = {"Workspace": [report]}
+        sections = {"Workspace": [report, my_account]}
 
     pages = [p for group in sections.values() for p in group]
     nav = st.navigation(pages, position="hidden")

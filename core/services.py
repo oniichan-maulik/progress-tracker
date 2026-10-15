@@ -8,10 +8,10 @@ import calendar
 from collections.abc import Iterable
 from datetime import date, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from core.auth import hash_password, validate_password
+from core.auth import hash_password, validate_password, verify_password
 from core.models import (
     APPROVED,
     CHANGES_REQUESTED,
@@ -151,6 +151,62 @@ def reset_password(session: Session, user_id: int, new_password: str) -> None:
         raise ServiceError(str(e)) from None
     user.password_hash = hash_password(new_password)
     session.commit()
+
+
+def change_own_password(session: Session, user_id: int, current: str, new_password: str) -> None:
+    """Self-service change: the current password must be correct and the new one different."""
+    user = _require_user(session, user_id)
+    if not verify_password(current, user.password_hash):
+        raise ServiceError("Your current password is incorrect.")
+    if new_password == current:
+        raise ServiceError("The new password must be different from the current one.")
+    reset_password(session, user_id, new_password)
+
+
+def user_footprint(session: Session, user_id: int) -> dict[str, int]:
+    """What a permanent delete would remove or detach, for the confirmation warning."""
+    return {
+        "tasks": session.scalar(select(func.count()).select_from(Task).where(Task.user_id == user_id)),
+        "reviews": session.scalar(
+            select(func.count()).select_from(MonthlyReview).where(MonthlyReview.user_id == user_id)
+        ),
+        "assigned_to_others": session.scalar(
+            select(func.count()).select_from(Task).where(Task.assigned_by == user_id, Task.user_id != user_id)
+        ),
+        "reviewed": session.scalar(
+            select(func.count()).select_from(MonthlyReview).where(
+                MonthlyReview.reviewer_id == user_id, MonthlyReview.user_id != user_id
+            )
+        ),
+    }
+
+
+def delete_user(session: Session, user_id: int, actor: User) -> dict[str, int]:
+    """Permanently delete a user with their tasks and monthly reports.
+
+    Tasks they assigned to others and reports they reviewed are kept; only the
+    link to the deleted user is cleared.
+    """
+    if not actor.is_admin:
+        raise ServiceError("Only admins can delete users.")
+    user = _require_user(session, user_id)
+    if user.id == actor.id:
+        raise ServiceError("You can't delete your own account.")
+    if user.is_admin and user.is_active and _active_admin_count(session) <= 1:
+        raise ServiceError("At least one active admin is required.")
+
+    footprint = user_footprint(session, user_id)
+    try:
+        session.execute(update(Task).where(Task.assigned_by == user_id).values(assigned_by=None))
+        session.execute(update(MonthlyReview).where(MonthlyReview.reviewer_id == user_id).values(reviewer_id=None))
+        session.execute(delete(Task).where(Task.user_id == user_id))
+        session.execute(delete(MonthlyReview).where(MonthlyReview.user_id == user_id))
+        session.delete(user)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return footprint
 
 
 # ---------------------------------------------------------------- reviews

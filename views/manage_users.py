@@ -70,6 +70,55 @@ def _edit_user(admin, users) -> None:
         elif st.button("Reactivate account", icon=":material/person_check:"):
             run(lambda s: svc.set_user_active(s, user.id, True, actor=admin), f"{user.full_name} reactivated.")
 
+        st.markdown('<div class="pt-danger pt-eyebrow">Danger zone</div>', unsafe_allow_html=True)
+        if user.id == admin.id:
+            st.caption("You can't delete your own account.")
+        elif st.button("Delete permanently…", key="open_delete_user", icon=":material/delete_forever:"):
+            _confirm_delete(admin.id, user.id)
+
+
+@st.dialog("Delete user permanently")
+def _confirm_delete(admin_id: int, user_id: int) -> None:
+    with get_session() as s:
+        admin, user = svc.get_user(s, admin_id), svc.get_user(s, user_id)
+        if user is None:
+            st.info("This user no longer exists.")
+            return
+        footprint = svc.user_footprint(s, user_id)
+
+    st.error(
+        f"**This can't be undone.** {user.full_name} (@{user.username}) will be removed along with "
+        f"**{footprint['tasks']} task(s)** and **{footprint['reviews']} monthly report(s)**.",
+        icon=":material/warning:",
+    )
+    kept = []
+    if footprint["assigned_to_others"]:
+        kept.append(f"{footprint['assigned_to_others']} task(s) they assigned to others")
+    if footprint["reviewed"]:
+        kept.append(f"{footprint['reviewed']} report(s) they reviewed")
+    if kept:
+        st.caption(f"Kept, without their name: {' and '.join(kept)}.")
+    st.caption("To block sign-in but keep their history, use **Deactivate account** instead.")
+
+    typed = st.text_input(f"Type **{user.username}** to confirm", placeholder=user.username)
+    c1, c2 = st.columns(2)
+    if c1.button("Cancel", width="stretch"):
+        st.rerun()
+    if c2.button(
+        "Delete permanently",
+        key="confirm_delete_user",
+        icon=":material/delete_forever:",
+        disabled=typed.strip().lower() != user.username,
+        width="stretch",
+    ):
+        try:
+            with get_session() as s:
+                svc.delete_user(s, user_id, actor=admin)
+            flash(f"{user.full_name} was permanently deleted.", ":material/delete_forever:")
+            st.rerun()
+        except svc.ServiceError as e:
+            st.error(str(e))
+
 
 def page() -> None:
     admin = current_user()

@@ -64,3 +64,17 @@ def test_reset_password(session, alice):
     reset_password(session, alice.id, "brandnew99")
     assert authenticate(session, "alice", "brandnew99")
     assert authenticate(session, "alice", "alicepass1") is None
+
+
+def test_change_own_password(session, alice):
+    from core.services import change_own_password
+
+    with pytest.raises(ServiceError, match="current password is incorrect"):
+        change_own_password(session, alice.id, "wrong-one", "brandnew99")
+    with pytest.raises(ServiceError, match="different"):
+        change_own_password(session, alice.id, "alicepass1", "alicepass1")
+    with pytest.raises(ServiceError, match="at least"):
+        change_own_password(session, alice.id, "alicepass1", "short")
+    change_own_password(session, alice.id, "alicepass1", "brandnew99")
+    assert authenticate(session, "alice", "brandnew99")
+    assert authenticate(session, "alice", "alicepass1") is None

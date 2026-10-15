@@ -12,6 +12,7 @@ Built for organisations of ~1-10 people. Runs locally on SQLite, or online for f
 - Create their own tasks (an "Add a task" form, or new rows straight in the grid)
 - Excel-style grid: **Date · Task · Status · Hours · Notes**, edited inline
 - Deleting a task needs admin approval: employees send a deletion request with a reason
+- Change their own password from **My account**
 - Status workflow: `Not Started → In Progress → Under Review → Completed` (completed tasks require hours)
 - Weekly breakdown of each month with per-week subtotals
 - "Assigned to you" panel with due dates and overdue warnings
@@ -24,13 +25,14 @@ Built for organisations of ~1-10 people. Runs locally on SQLite, or online for f
 - Approve reports or request changes with a comment; reopen approved months
 - Approve or reject employees' task deletion requests
 - Assign tasks (to one or many employees) with optional due dates; track and remove them
-- Manage users: create accounts, reset passwords, change roles, deactivate
+- Manage users: create accounts, reset passwords, change roles, deactivate, or permanently delete (with a typed-username confirmation)
+- Assign tasks to themselves too, and log their own work under **My report**
 - Export one employee's month, or the whole team (one sheet per employee)
 
 **Under the hood**
 - bcrypt-hashed passwords, no public sign-up (first run creates the admin)
 - Business rules live in a UI-independent service layer; grid saves are atomic
-- 35 pytest tests including headless UI tests via Streamlit `AppTest`; CI on GitHub Actions
+- 47 pytest tests including headless UI tests via Streamlit `AppTest`; CI on GitHub Actions
 
 ## Architecture
 
