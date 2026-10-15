@@ -14,15 +14,17 @@ Built for organisations of ~1-10 people. Runs locally on SQLite, or online for f
 - Deleting a task needs admin approval: employees send a deletion request with a reason
 - Change their own password from **My account**
 - Status workflow: `Not Started → In Progress → Under Review → Completed`
-- Weekly breakdown of each month with per-week subtotals
+- Summary cards for the month: tasks, completed, in progress, completion rate
+- Weekly breakdown of each month with per-week completion
 - "Assigned to you" panel with due dates and overdue warnings
 - Submit the month for review; it locks until approved or sent back
-- Download the month as a formatted `.xlsx`
+- Download the month as a formatted `.xlsx` (Date · Task · Status · Notes · Assigned By · Due Date)
 
 **Admins (head team)**
-- Team dashboard: tasks, completion rate and review state per employee
+- Team dashboard: a "needs attention" strip, summary cards, and tasks, completion rate, overdue count and review state per employee
 - Charts: status breakdown per employee, 6-month completed-tasks trend
 - Approve reports or request changes with a comment; reopen approved months
+- Warning before approving a month that still has unfinished assigned tasks (approval needs an explicit "Approve anyway")
 - Approve or reject employees' task deletion requests
 - Assign tasks (to one or many employees) with optional due dates; track and remove them
 - Manage users: create accounts, reset passwords, change roles, deactivate, or permanently delete (with a typed-username confirmation)
@@ -31,8 +33,10 @@ Built for organisations of ~1-10 people. Runs locally on SQLite, or online for f
 
 **Under the hood**
 - bcrypt-hashed passwords, no public sign-up (first run creates the admin)
+- Hours are not tracked: the app records what was done and its status, not time spent
+- Clean UI: the Streamlit toolbar (top-right menu, Deploy/Share buttons) is hidden
 - Business rules live in a UI-independent service layer; grid saves are atomic
-- 47 pytest tests including headless UI tests via Streamlit `AppTest`; CI on GitHub Actions
+- 49 pytest tests including headless UI tests via Streamlit `AppTest`; CI on GitHub Actions
 
 ## Architecture
 
@@ -70,6 +74,8 @@ python -m scripts.seed_demo --reset    # wipes ALL data first
 
 Log in as `admin` / `demo1234` (employees: `priya`, `rahul`, `sara`, `tom` - same password).
 
+> **Careful:** if `.streamlit/secrets.toml` holds a real `DATABASE_URL`, running the app or `seed_demo --reset` locally works on that live database. Remove or rename it (or set `DATABASE_URL=sqlite:///...`) before demos.
+
 **Tests:** `pytest`
 
 ## Configuration
@@ -94,6 +100,10 @@ Streamlit Cloud's disk is wiped on restart, so the online version keeps its data
    ```
 4. Deploy. Tables are created automatically; the first visitor creates the admin account - **do this right away** so nobody else can.
 
+## GitHub Codespaces
+
+The repo includes a `.devcontainer/` config: open it in a Codespace and the app starts automatically on port 8501 (local SQLite unless you add secrets).
+
 ## Docker
 
 ```bash
@@ -105,9 +115,12 @@ docker run -p 8501:8501 -v progress-data:/app/data progress-tracker
 ## Project layout
 
 ```
-app.py                  login, first-run setup, role-based navigation
-core/                   config, models, db, auth, services (rules), reports (Excel)
-views/                  my_report, team_review, assign_tasks, manage_users, charts
+app.py                  login, first-run setup, sidebar and role-based navigation
+core/                   config, models, db (+ small migrations), auth, services (rules), reports (Excel)
+views/                  my_report, team_review, assign_tasks, manage_users, account (pages)
+                        ui (theme/CSS, cards), charts (plotly), common (shared widgets)
 scripts/seed_demo.py    demo data
-tests/                  service, report and UI tests
+tests/                  service, report, config and UI tests
+.streamlit/config.toml  light/dark theme, hidden toolbar
+.devcontainer/          GitHub Codespaces setup
 ```
