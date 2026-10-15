@@ -287,12 +287,13 @@ def page() -> None:
                     except svc.ServiceError as e:
                         st.error(str(e))
         with download:
-            workbook = build_workbook(
-                [ReportSection(user.full_name, month, state, df, review.comment if review else "")], org_name()
-            )
+            section = ReportSection(user.full_name, month, state, df, review.comment if review else "")
+            org = org_name()
             st.download_button(
                 "Download Excel",
-                workbook,
+                # Built on click, without a rerun (a rerun would invalidate the download link).
+                lambda: build_workbook([section], org),
+                on_click="ignore",
                 file_name=f"{user.username}_{month}_progress.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 icon=":material/download:",

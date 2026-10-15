@@ -9,7 +9,7 @@ from core.config import org_name
 from core.db import get_session
 from core.models import ROLE_EMPLOYEE, ROLES
 from views.common import current_user, flash
-from views.ui import card, card_title, page_header, stat_cards, style_table
+from views.ui import card, card_title, page_header, stat_cards, status_pill, style_table
 
 
 def _create_form() -> None:
@@ -50,10 +50,18 @@ def _edit_user(admin, users) -> None:
             st.selectbox(
                 "User",
                 list(by_id),
-                format_func=lambda i: f"{by_id[i].full_name} (@{by_id[i].username})"
-                + ("" if by_id[i].is_active else " · inactive"),
+                # Labels must not change when an account is edited: Streamlit matches the
+                # selection by label, and a changed label (e.g. "inactive") reset the picker
+                # to the first user, so the next action hit the wrong account.
+                format_func=lambda i: f"{by_id[i].full_name} (@{by_id[i].username})",
+                key="edit_user_pick",
             )
         ]
+        st.markdown(
+            status_pill(user.role.title(), "Submitted" if user.is_admin else "Draft") + "&nbsp;"
+            + status_pill("Active" if user.is_active else "Inactive"),
+            unsafe_allow_html=True,
+        )
         with st.form(f"role_{user.id}", border=False):
             c1, c2 = st.columns([2, 1], vertical_alignment="bottom")
             role = c1.selectbox("Role", ROLES, index=ROLES.index(user.role), format_func=str.title)

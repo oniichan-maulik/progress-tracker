@@ -457,7 +457,7 @@ def assign_task(
         raise ServiceError("Only admins can assign tasks.")
     user_ids = list(dict.fromkeys(user_ids))
     if not user_ids:
-        raise ServiceError("Choose at least one employee.")
+        raise ServiceError("Choose at least one person.")
     title, _, _ = _clean_task_fields(title, NOT_STARTED, None)
     today = today or date.today()
     if due_date and due_date < today:

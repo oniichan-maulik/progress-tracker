@@ -153,9 +153,12 @@ def page() -> None:
             ReportSection(p.full_name, month, reviews.get(p.id, (DRAFT, ""))[0], df[df["user_id"] == p.id], reviews.get(p.id, (DRAFT, ""))[1])
             for p in people
         ]
+        org = org_name()
         st.download_button(
             "Export team",
-            build_workbook(sections, org_name()),
+            # Built on click, without a rerun: a rerun would invalidate the other download links.
+            lambda: build_workbook(sections, org),
+            on_click="ignore",
             file_name=f"team_{month}_progress.xlsx",
             mime=XLSX,
             icon=":material/download:",
@@ -225,7 +228,9 @@ def page() -> None:
                 st.selectbox(
                     "Person",
                     list(by_id),
-                    format_func=lambda i: f"{by_id[i].full_name} · {REVIEW_BADGES[reviews.get(i, (DRAFT,))[0]][0]}",
+                    # Name only: a label that changes on approve/send-back would reset the
+                    # picker to another person. The review state is shown as a pill below.
+                    format_func=lambda i: by_id[i].full_name,
                     key=f"team_employee_{month}",
                     label_visibility="collapsed",
                 )
@@ -244,9 +249,11 @@ def page() -> None:
             st.caption(f"Last comment from {reviewer}: “{comment}”")
         weekly_view(month, emp_df)
         _review_actions(admin, employee, month, state)
+        section_one = ReportSection(employee.full_name, month, state, emp_df, comment)
         st.download_button(
             f"Download {employee.full_name}'s report",
-            build_workbook([ReportSection(employee.full_name, month, state, emp_df, comment)], org_name()),
+            lambda: build_workbook([section_one], org),
+            on_click="ignore",
             file_name=f"{employee.username}_{month}_progress.xlsx",
             mime=XLSX,
             icon=":material/download:",
