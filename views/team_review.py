@@ -58,9 +58,28 @@ def _overview(people, df: pd.DataFrame, reviews) -> pd.DataFrame:
 
 def _review_actions(admin, employee, month: str, state: str) -> None:
     if state == SUBMITTED:
+        with get_session() as s:
+            open_tasks = [
+                (t.title, t.status, t.due_date) for t in svc.open_assigned_tasks(s, employee.id, month)
+            ]
+        if open_tasks:
+            items = "\n".join(
+                f"- **{title}** · {status}" + (f" · due {due:%d %b}" if due else "") for title, status, due in open_tasks
+            )
+            st.warning(
+                f"**{len(open_tasks)} assigned task(s) aren't completed.** Approving locks this month, so "
+                f"{employee.full_name.split()[0]} won't be able to finish or update them:\n\n{items}\n\n"
+                "Consider **Request changes** so they can complete them first.",
+                icon=":material/warning:",
+            )
         with st.form(f"review_{employee.id}_{month}", border=False):
             comment = st.text_area(
                 "Comment", placeholder="Optional for approval, required when requesting changes", height=90
+            )
+            approve_anyway = (
+                st.checkbox("Approve anyway. I understand these tasks will be locked as they are.")
+                if open_tasks
+                else False
             )
             c1, c2, _ = st.columns([1, 1, 2])
             approve = c1.form_submit_button("Approve", type="primary", icon=":material/check:", width="stretch")
@@ -68,7 +87,10 @@ def _review_actions(admin, employee, month: str, state: str) -> None:
         if approve or send_back:
             try:
                 with get_session() as s:
-                    svc.review_month(s, admin, employee.id, month, approve=approve, comment=comment)
+                    svc.review_month(
+                        s, admin, employee.id, month, approve=approve, comment=comment,
+                        allow_open_assigned=approve_anyway,
+                    )
                 flash(f"{employee.full_name}'s report {'approved' if approve else 'sent back'}.")
                 st.rerun()
             except svc.ServiceError as e:

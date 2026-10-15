@@ -255,7 +255,7 @@ def test_delete_user_removes_their_data_and_keeps_others(session, admin, alice, 
     add_task(session, alice.id, D, "Alice's own task")
     assign_task(session, second_admin, [alice.id, bob.id], "From second admin", today=D)
     submit_month(session, bob.id, OCT)
-    review_month(session, second_admin, bob.id, OCT, approve=True)
+    review_month(session, second_admin, bob.id, OCT, approve=True, allow_open_assigned=True)
     submit_month(session, alice.id, OCT)
 
     assert svc.user_footprint(session, alice.id) == {"tasks": 2, "reviews": 1, "assigned_to_others": 0, "reviewed": 0}
@@ -285,3 +285,29 @@ def test_delete_user_guards(session, admin, alice):
         svc.delete_user(session, other.id, actor=admin)  # admin is inactive but object still admin
     with pytest.raises(ServiceError, match="not found"):
         svc.delete_user(session, 9999, actor=other)
+
+
+def test_approval_warns_about_open_assigned_tasks(session, admin, alice):
+    add_task(session, alice.id, D, "Own task", IN_PROGRESS)  # own open tasks don't block
+    (assigned,) = assign_task(session, admin, [alice.id], "Audit", today=D)
+    submit_month(session, alice.id, OCT)
+    assert [t.title for t in svc.open_assigned_tasks(session, alice.id, OCT)] == ["Audit"]
+
+    with pytest.raises(ServiceError, match="1 assigned task"):
+        review_month(session, admin, alice.id, OCT, approve=True)
+    assert review_state(session, alice.id, OCT) == SUBMITTED  # nothing changed
+
+    # Sending back still works without confirmation; then the employee completes it.
+    review_month(session, admin, alice.id, OCT, approve=False, comment="Finish the audit")
+    update_task(session, assigned.id, alice, status=COMPLETED, hours=2)
+    submit_month(session, alice.id, OCT)
+    assert svc.open_assigned_tasks(session, alice.id, OCT) == []
+    review_month(session, admin, alice.id, OCT, approve=True)
+    assert review_state(session, alice.id, OCT) == APPROVED
+
+
+def test_approve_anyway_with_open_assigned_tasks(session, admin, alice):
+    assign_task(session, admin, [alice.id], "Audit", today=D)
+    submit_month(session, alice.id, OCT)
+    review_month(session, admin, alice.id, OCT, approve=True, allow_open_assigned=True)
+    assert review_state(session, alice.id, OCT) == APPROVED

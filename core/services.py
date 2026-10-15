@@ -254,8 +254,34 @@ def submit_month(session: Session, user_id: int, month: str) -> MonthlyReview:
     return review
 
 
+def open_assigned_tasks(session: Session, user_id: int, month: str) -> list[Task]:
+    """Assigned tasks in this month that aren't Completed yet.
+
+    Approving the month locks them, so the employee could no longer finish them.
+    """
+    first, last = month_bounds(month)
+    return list(
+        session.scalars(
+            select(Task)
+            .where(
+                Task.user_id == user_id,
+                Task.assigned_by.is_not(None),
+                Task.status != COMPLETED,
+                Task.work_date.between(first, last),
+            )
+            .order_by(Task.work_date, Task.id)
+        )
+    )
+
+
 def review_month(
-    session: Session, reviewer: User, user_id: int, month: str, approve: bool, comment: str = ""
+    session: Session,
+    reviewer: User,
+    user_id: int,
+    month: str,
+    approve: bool,
+    comment: str = "",
+    allow_open_assigned: bool = False,
 ) -> MonthlyReview:
     if not reviewer.is_admin:
         raise ServiceError("Only admins can review reports.")
@@ -265,6 +291,13 @@ def review_month(
         raise ServiceError("This report isn't waiting for review." if approve else "This report can't be sent back.")
     if not approve and not comment.strip():
         raise ServiceError("Add a comment explaining what needs to change.")
+    if approve and not allow_open_assigned:
+        open_tasks = open_assigned_tasks(session, user_id, month)
+        if open_tasks:
+            raise ServiceError(
+                f"{len(open_tasks)} assigned task(s) in this month aren't completed. Approving locks them, "
+                "so request changes, or confirm that you want to approve anyway."
+            )
     review.state = APPROVED if approve else CHANGES_REQUESTED
     review.comment = comment.strip()
     review.reviewer_id = reviewer.id
