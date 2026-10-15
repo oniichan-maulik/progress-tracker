@@ -90,21 +90,21 @@ def test_grid_change_detection():
     d1, d2 = date(2026, 10, 5), date(2026, 10, 6)
     original = pd.DataFrame(
         [
-            {"id": 1, "Date": d1, "Task": "Keep", "Status": "In Progress", "Hours": None, "Notes": ""},
-            {"id": 2, "Date": d1, "Task": "Edit me", "Status": "In Progress", "Hours": 1.0, "Notes": ""},
+            {"id": 1, "Date": d1, "Task": "Keep", "Status": "In Progress", "Notes": ""},
+            {"id": 2, "Date": d1, "Task": "Edit me", "Status": "In Progress", "Notes": ""},
         ]
     )
     edited = pd.DataFrame(
         [
-            {"id": 1, "Date": d1, "Task": "Keep", "Status": "In Progress", "Hours": float("nan"), "Notes": ""},
-            {"id": 2, "Date": "2026-10-06", "Task": "Edit me", "Status": "Completed", "Hours": 2.5, "Notes": "x"},
-            {"id": None, "Date": None, "Task": "Brand new", "Status": None, "Hours": None, "Notes": None},
-            {"id": None, "Date": d2, "Task": "  ", "Status": "Not Started", "Hours": None, "Notes": None},
+            {"id": 1, "Date": d1, "Task": "Keep", "Status": "In Progress", "Notes": ""},
+            {"id": 2, "Date": "2026-10-06", "Task": "Edit me", "Status": "Completed", "Notes": "x"},
+            {"id": None, "Date": None, "Task": "Brand new", "Status": None, "Notes": None},
+            {"id": None, "Date": d2, "Task": "  ", "Status": "Not Started", "Notes": None},
         ]
     )
     added, updated = _collect_changes(original, edited, default_date=d2)
-    assert updated == {2: {"work_date": d2, "title": "Edit me", "status": "Completed", "hours": 2.5, "notes": "x"}}
-    assert added == [{"work_date": d2, "title": "Brand new", "status": "Not Started", "hours": None, "notes": ""}]
+    assert updated == {2: {"work_date": d2, "title": "Edit me", "status": "Completed", "notes": "x"}}
+    assert added == [{"work_date": d2, "title": "Brand new", "status": "Not Started", "notes": ""}]
 
 
 def test_sign_out_hides_sidebar(seeded):

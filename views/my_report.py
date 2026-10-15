@@ -18,12 +18,11 @@ from views.common import (
     metrics_row,
     review_pill,
     to_date,
-    to_hours,
     weekly_view,
 )
 from views.ui import card, card_title, header_rule, page_header, style_table
 
-EDITABLE = ["Date", "Task", "Status", "Hours", "Notes"]
+EDITABLE = ["Date", "Task", "Status", "Notes"]
 
 
 def _assigned_panel(user_id: int) -> None:
@@ -46,7 +45,7 @@ def _assigned_panel(user_id: int) -> None:
     with card("assigned"):
         card_title(
             f"Assigned to you · {len(rows)} open" + (f" · {overdue} overdue" if overdue else ""),
-            "Update status and hours for these in the task grid of the month shown.",
+            "Update the status of these in the task grid of the month shown.",
         )
         table = pd.DataFrame(rows)
         table["Due"] = [f"{d:%d %b %Y}" if d else "" for d in table["Due"]]
@@ -61,7 +60,6 @@ def _collect_changes(original: pd.DataFrame, edited: pd.DataFrame, default_date:
             "work_date": to_date(row["Date"]) or default_date,
             "title": "" if pd.isna(row["Task"]) else str(row["Task"]),
             "status": row["Status"] if isinstance(row["Status"], str) else NOT_STARTED,
-            "hours": to_hours(row["Hours"]),
             "notes": "" if pd.isna(row["Notes"]) else str(row["Notes"]),
         }
         if pd.isna(row["id"]):
@@ -73,7 +71,6 @@ def _collect_changes(original: pd.DataFrame, edited: pd.DataFrame, default_date:
             "work_date": to_date(old["Date"]),
             "title": old["Task"],
             "status": old["Status"],
-            "hours": to_hours(old["Hours"]),
             "notes": old["Notes"] or "",
         }
         if fields != before:
@@ -92,17 +89,16 @@ def _add_task_form(user, month: str) -> None:
     with st.popover("Add task", icon=":material/add:", width="stretch"):
         with st.form(f"add_task_{month}", clear_on_submit=True, border=False):
             title = st.text_input("Task", max_chars=300)
-            c1, c2, c3 = st.columns(3)
+            c1, c2 = st.columns(2)
             work_date = c1.date_input(
                 "Date", value=_default_date(month), min_value=first, max_value=last, format="DD/MM/YYYY"
             )
             status = c2.selectbox("Status", STATUS_OPTIONS)
-            hours = c3.number_input("Hours taken", min_value=0.0, max_value=1000.0, step=0.25, value=None)
             notes = st.text_area("Notes (optional)", height=80)
             if st.form_submit_button("Add task", type="primary", icon=":material/add:"):
                 try:
                     with get_session() as s:
-                        svc.add_task(s, user.id, work_date, title, status, hours, notes)
+                        svc.add_task(s, user.id, work_date, title, status, notes=notes)
                     st.session_state[f"grid_v_{month}"] = st.session_state.get(f"grid_v_{month}", 0) + 1
                     flash("Task added.")
                     st.rerun()
@@ -136,10 +132,6 @@ def _task_grid(user, month: str, df: pd.DataFrame) -> None:
                 "Status": st.column_config.SelectboxColumn(
                     options=STATUS_OPTIONS, default=NOT_STARTED, required=True, width="small"
                 ),
-                "Hours": st.column_config.NumberColumn(
-                    "Hours", min_value=0, max_value=1000, step=0.25, format="%.2f", help="Time taken, in hours",
-                    width="small",
-                ),
                 "Notes": st.column_config.TextColumn(width="medium"),
                 "Assigned By": st.column_config.TextColumn(help="Set when an admin assigned this task", width="small"),
                 "Due": st.column_config.TextColumn(width="small"),
@@ -150,8 +142,7 @@ def _task_grid(user, month: str, df: pd.DataFrame) -> None:
         )
         saved = st.form_submit_button("Save changes", type="primary", icon=":material/save:")
     st.caption(
-        "Edit cells directly, or add rows with the + below the grid. Completed tasks need their hours. "
-        "Assigned tasks can't be renamed."
+        "Edit cells directly, or add rows with the + below the grid. Assigned tasks can't be renamed."
     )
 
     if saved:
@@ -264,7 +255,7 @@ def page() -> None:
             _task_grid(user, month, df)
 
     with card("weeks"):
-        card_title("Weekly breakdown", "Tasks grouped by week, with completion and hours")
+        card_title("Weekly breakdown", "Tasks grouped by week, with completion")
         weekly_view(month, df)
 
     with card("submit"):

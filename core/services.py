@@ -331,8 +331,6 @@ def _clean_task_fields(title: str, status: str, hours: float | None) -> tuple[st
         hours = round(float(hours), 2)
         if hours < 0 or hours > 1000:
             raise ServiceError("Hours must be between 0 and 1000.")
-    if status == COMPLETED and not hours:
-        raise ServiceError(f"Enter the hours taken for completed task '{title}'.")
     return title, status, hours
 
 

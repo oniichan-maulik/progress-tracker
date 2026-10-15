@@ -26,7 +26,7 @@ def _load(month: str):
         }
         first, _ = svc.month_bounds(month)
         trend = [
-            {"Month": svc.month_bounds(m)[0].strftime("%b %Y"), "Hours": summarize(tasks_to_df(svc.get_tasks(s, month=m, user_ids=ids)))["hours"]}
+            {"Month": svc.month_bounds(m)[0].strftime("%b %Y"), "Completed": summarize(tasks_to_df(svc.get_tasks(s, month=m, user_ids=ids)))["completed"]}
             for m in reversed(svc.recent_months(6, today=first))
         ]
     # Active employees always show; admins and inactive people only when they logged work this month.
@@ -47,7 +47,6 @@ def _overview(people, df: pd.DataFrame, reviews) -> pd.DataFrame:
                 "Tasks": stats["tasks"],
                 "Completed": stats["completed"],
                 "In Progress": stats["in_progress"],
-                "Hours": stats["hours"],
                 "Completion": stats["completion_rate"],
                 "Overdue": int(df[(df["user_id"] == p.id) & df["Overdue"]].shape[0]),
                 "Review": reviews.get(p.id, (DRAFT,))[0],
@@ -118,7 +117,6 @@ def _deletion_requests(admin, rows: list[dict]) -> None:
         shown = df.drop(columns="id").assign(
             Date=[f"{d:%d %b %Y}" for d in df["Date"]],
             Requested=[f"{d:%d %b %Y}" for d in df["Requested"]],
-            Hours=pd.to_numeric(df["Hours"], errors="coerce"),
         )
         selection = st.dataframe(
             style_table(shown),
@@ -154,7 +152,6 @@ def _pending_deletions() -> list[dict]:
                 "Date": t.work_date,
                 "Task": t.title,
                 "Status": t.status,
-                "Hours": t.hours,
                 "Reason": t.deletion_reason,
                 "Requested": t.deletion_requested_at.date(),
             }
@@ -220,11 +217,7 @@ def page() -> None:
             },
         )
 
-    left, right = st.columns([1.15, 1])
-    with left, card("hours"):
-        card_title("Hours by person", "Total hours logged this month")
-        charts.show(charts.hours_by_employee(overview))
-    with right, card("status"):
+    with card("status"):
         card_title("Task status", "Tasks per person by status")
         if df.empty:
             st.caption("No tasks this month.")
@@ -232,7 +225,7 @@ def page() -> None:
             charts.show(charts.status_breakdown(df, [p.full_name for p in people]))
 
     with card("trend"):
-        card_title("Team hours", "Last 6 months")
+        card_title("Tasks completed", "Whole team, last 6 months")
         charts.show(charts.monthly_trend(trend))
 
     if deletions:
@@ -263,8 +256,7 @@ def page() -> None:
         stats = summarize(emp_df)
         st.markdown(
             f"{status_pill(REVIEW_BADGES[state][0], state)}&nbsp;&nbsp;"
-            f"<span style='color:var(--pt-text-2)'>{stats['tasks']} tasks · {stats['completed']} completed · "
-            f"{stats['hours']:g} h logged</span>",
+            f"<span style='color:var(--pt-text-2)'>{stats['tasks']} tasks · {stats['completed']} completed</span>",
             unsafe_allow_html=True,
         )
         if comment:

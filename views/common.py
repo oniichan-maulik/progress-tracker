@@ -72,7 +72,8 @@ def metrics_row(stats: dict) -> None:
             {"label": "Tasks", "value": stats["tasks"], "icon": "tasks", "tone": "neutral", "hint": f"{open_tasks} still open"},
             {"label": "Completed", "value": stats["completed"], "icon": "done", "tone": "green",
              "hint": f"{stats['under_review']} under review"},
-            {"label": "Hours logged", "value": f"{stats['hours']:g}", "icon": "clock", "tone": "blue"},
+            {"label": "In progress", "value": stats["in_progress"], "icon": "clock", "tone": "blue",
+             "hint": f"{stats['not_started']} not started"},
             {"label": "Completion rate", "value": f"{stats['completion_rate']:.0%}", "icon": "target", "tone": "lime"},
         ]
     )
@@ -86,7 +87,7 @@ def display_tasks(df: pd.DataFrame, include_employee: bool = False) -> None:
         f"{d:%d %b} · overdue" if overdue else (f"{d:%d %b}" if pd.notna(d) and d else "")
         for d, overdue in zip(view["Due Date"], view["Overdue"])
     ]
-    cols = (["Employee"] if include_employee else []) + ["Date", "Task", "Status", "Hours", "Notes", "Assigned By", "Due Date"]
+    cols = (["Employee"] if include_employee else []) + ["Date", "Task", "Status", "Notes", "Assigned By", "Due Date"]
     st.dataframe(
         style_table(view[cols].reset_index(drop=True)),
         hide_index=True,
@@ -110,12 +111,6 @@ def to_date(value) -> date | None:
     return pd.to_datetime(value).date()
 
 
-def to_hours(value) -> float | None:
-    if value is None or pd.isna(value):
-        return None
-    return float(value)
-
-
 def weekly_view(month: str, df: pd.DataFrame, include_employee: bool = False) -> None:
     weeks = weekly_breakdown(df, month)
     if not weeks:
@@ -125,7 +120,7 @@ def weekly_view(month: str, df: pd.DataFrame, include_employee: bool = False) ->
         stats = summarize(rows)
         label = (
             f"**Week {week}** · {start:%d %b} – {end:%d %b} · "
-            f":green[{stats['completed']}/{stats['tasks']} completed] · :gray[{stats['hours']:g} h]"
+            f":green[{stats['completed']}/{stats['tasks']} completed]"
         )
         with st.expander(label, icon=":material/date_range:"):
             st.progress(stats["completion_rate"], text=f"{stats['completion_rate']:.0%} of this week's tasks completed")

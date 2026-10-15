@@ -75,7 +75,7 @@ _CSS = """
 
 /* ---- App chrome ---- */
 .block-container { padding: 1.6rem 2.2rem 4rem; max-width: 1360px; }
-[data-testid="stAppDeployButton"] { display: none; }
+[data-testid="stAppDeployButton"], [data-testid="stToolbar"], [data-testid="stMainMenu"] { display: none; }
 [data-testid="stHeader"] { background: transparent; }
 [data-testid="stSidebarHeader"] { display: none; }
 [data-testid="stSidebarUserContent"] { padding-top: 1.1rem; }
@@ -307,10 +307,6 @@ def _cell(value) -> str:
 
 def style_table(df: pd.DataFrame):
     """Color status / review / account cells and flag overdue dates in a read-only table."""
-    if "Hours" in df:
-        # Streamlit draws empty numeric cells as "None", so hours are rendered as text.
-        hours = pd.to_numeric(df["Hours"], errors="coerce")
-        df = df.assign(Hours=["–" if pd.isna(v) else f"{v:.2f}" for v in hours])
     styler = df.style
     pill_cols = [c for c in ("Status", "Review") if c in df]
     if pill_cols:
@@ -321,6 +317,4 @@ def style_table(df: pd.DataFrame):
             lambda v: f"color: {_ERROR[1]}; font-weight: 600" if isinstance(v, str) and "overdue" in v.lower() else "",
             subset=overdue_cols,
         )
-    if "Hours" in df:
-        styler = styler.set_properties(subset=["Hours"], **{"text-align": "right"})
     return styler

@@ -83,6 +83,10 @@ textColor = "#f1f2ee"
 borderColor = "#262b26"
 primaryColor = "#a3e635"
 
+[client]
+# Hide the top-right menu (developer options, settings, Share/GitHub on Cloud).
+toolbarMode = "minimal"
+
 [server]
 headless = true
 

@@ -52,8 +52,7 @@ def test_task_validation(session, alice):
         add_task(session, alice.id, D, "   ")
     with pytest.raises(ServiceError, match="Status"):
         add_task(session, alice.id, D, "x", "Done")
-    with pytest.raises(ServiceError, match="hours taken"):
-        add_task(session, alice.id, D, "x", COMPLETED)
+    add_task(session, alice.id, D, "Done without hours", COMPLETED)  # hours are no longer tracked
     with pytest.raises(ServiceError, match="between"):
         add_task(session, alice.id, D, "x", IN_PROGRESS, hours=-1)
 

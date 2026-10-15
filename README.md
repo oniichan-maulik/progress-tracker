@@ -10,18 +10,18 @@ Built for organisations of ~1-10 people. Runs locally on SQLite, or online for f
 
 **Employees**
 - Create their own tasks (an "Add a task" form, or new rows straight in the grid)
-- Excel-style grid: **Date · Task · Status · Hours · Notes**, edited inline
+- Excel-style grid: **Date · Task · Status · Notes**, edited inline
 - Deleting a task needs admin approval: employees send a deletion request with a reason
 - Change their own password from **My account**
-- Status workflow: `Not Started → In Progress → Under Review → Completed` (completed tasks require hours)
+- Status workflow: `Not Started → In Progress → Under Review → Completed`
 - Weekly breakdown of each month with per-week subtotals
 - "Assigned to you" panel with due dates and overdue warnings
 - Submit the month for review; it locks until approved or sent back
 - Download the month as a formatted `.xlsx`
 
 **Admins (head team)**
-- Team dashboard: tasks, completion rate, hours and review state per employee
-- Charts: hours by employee, status breakdown, 6-month trend
+- Team dashboard: tasks, completion rate and review state per employee
+- Charts: status breakdown per employee, 6-month completed-tasks trend
 - Approve reports or request changes with a comment; reopen approved months
 - Approve or reject employees' task deletion requests
 - Assign tasks (to one or many employees) with optional due dates; track and remove them
@@ -47,7 +47,7 @@ flowchart LR
 | Table | Purpose |
 |---|---|
 | `users` | username, full name, bcrypt hash, role (`admin`/`employee`), active flag |
-| `tasks` | owner, date, task, status, hours, notes, `assigned_by`, `due_date`, deletion request fields |
+| `tasks` | owner, date, task, status, notes, `hours` (legacy, no longer shown), `assigned_by`, `due_date`, deletion request fields |
 | `monthly_reviews` | per employee per month: `Draft` / `Submitted` / `Approved` / `Changes Requested`, reviewer, comment |
 
 ## Run locally

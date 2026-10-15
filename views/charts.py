@@ -47,29 +47,6 @@ def _bar_height(rows: int, legend: bool = False) -> int:
     return max(200, 70 + 46 * rows) + (30 if legend else 0)
 
 
-def hours_by_employee(overview: pd.DataFrame) -> go.Figure:
-    data = overview.sort_values("Hours")
-    top = float(data["Hours"].max() or 0)
-    fig = go.Figure(
-        go.Bar(
-            x=data["Hours"],
-            y=data["Employee"],
-            orientation="h",
-            marker_color=SERIES[0],
-            width=0.55,
-            text=[f"{h:g} h" for h in data["Hours"]],
-            textposition="outside",
-            textfont=dict(color=_INK),
-            cliponaxis=False,
-            hovertemplate="%{y}: %{x:g} hours<extra></extra>",
-        )
-    )
-    # Leave room on the right for the "12.5 h" labels.
-    fig.update_xaxes(range=[0, max(top * 1.18, 1)], ticksuffix=" h")
-    fig.update_yaxes(showgrid=False, ticklabelstandoff=10)
-    return _style(fig, _bar_height(len(data)))
-
-
 def status_breakdown(df: pd.DataFrame, employees: list[str]) -> go.Figure:
     counts = df.groupby(["Employee", "Status"]).size().unstack(fill_value=0).reindex(employees, fill_value=0)
     fig = go.Figure()
@@ -94,17 +71,17 @@ def monthly_trend(trend: pd.DataFrame) -> go.Figure:
     fig = go.Figure(
         go.Scatter(
             x=trend["Month"],
-            y=trend["Hours"],
+            y=trend["Completed"],
             mode="lines+markers",
             line=dict(color=SERIES[0], width=2),
             marker=dict(size=8, color=SERIES[0], line=dict(width=2, color="#ffffff")),
             fill="tozeroy",
             fillcolor="rgba(101,163,13,0.10)",
-            hovertemplate="%{x}: %{y:g} hours<extra></extra>",
+            hovertemplate="%{x}: %{y} tasks completed<extra></extra>",
         )
     )
     fig.update_layout(hovermode="x")
-    # Pad the category axis so the first point and the "0 h" label don't collide.
+    # Pad the category axis so the first point and the "0" label don't collide.
     fig.update_xaxes(showgrid=False, type="category", range=[-0.35, len(trend) - 0.65])
-    fig.update_yaxes(rangemode="tozero", ticksuffix=" h", ticklabelstandoff=8)
+    fig.update_yaxes(rangemode="tozero", ticklabelstandoff=8)
     return _style(fig, 260)

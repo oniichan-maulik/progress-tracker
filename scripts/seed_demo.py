@@ -56,8 +56,7 @@ def seed(session, today: date, rng: random.Random) -> None:
                     status = rng.choice([IN_PROGRESS, UNDER_REVIEW, NOT_STARTED]) if recent else (
                         COMPLETED if rng.random() < 0.85 else UNDER_REVIEW
                     )
-                    hours = round(rng.choice([0.5, 1, 1.5, 2, 3, 4, 6]), 2) if status != NOT_STARTED else None
-                    svc.add_task(session, emp.id, day, rng.choice(WORK), status, hours, commit=False)
+                    svc.add_task(session, emp.id, day, rng.choice(WORK), status, commit=False)
                 day += timedelta(days=1)
             session.commit()
             if not current:

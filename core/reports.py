@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from core.models import COMPLETED, IN_PROGRESS, NOT_STARTED, UNDER_REVIEW, Task
 from core.services import is_overdue, month_label, week_of_month, week_range
 
-COLUMNS = ["Date", "Week", "Task", "Status", "Hours", "Notes", "Assigned By", "Due Date"]
+COLUMNS = ["Date", "Week", "Task", "Status", "Notes", "Assigned By", "Due Date"]
 
 STATUS_FILLS = {
     NOT_STARTED: "E7E6E2",
@@ -30,7 +30,6 @@ def tasks_to_df(tasks: list[Task]) -> pd.DataFrame:
             "Week": week_of_month(t.work_date),
             "Task": t.title,
             "Status": t.status,
-            "Hours": t.hours,
             "Notes": t.notes,
             "Assigned By": t.assigner.full_name if t.assigner else "",
             "Due Date": t.due_date,
@@ -42,7 +41,6 @@ def tasks_to_df(tasks: list[Task]) -> pd.DataFrame:
         for t in tasks
     ]
     df = pd.DataFrame(rows, columns=["id", *COLUMNS, "Overdue", "Deletion Requested", "Employee", "user_id"])
-    df["Hours"] = pd.to_numeric(df["Hours"], errors="coerce")
     return df
 
 
@@ -55,7 +53,6 @@ def summarize(df: pd.DataFrame) -> dict:
         "in_progress": int((df["Status"] == IN_PROGRESS).sum()) if total else 0,
         "under_review": int((df["Status"] == UNDER_REVIEW).sum()) if total else 0,
         "not_started": int((df["Status"] == NOT_STARTED).sum()) if total else 0,
-        "hours": float(df["Hours"].fillna(0).sum()) if total else 0.0,
         "completion_rate": completed / total if total else 0.0,
     }
 
@@ -67,10 +64,6 @@ def weekly_breakdown(df: pd.DataFrame, month: str) -> list[tuple[int, date, date
         start, end = week_range(month, int(week))
         out.append((int(week), start, end, rows))
     return out
-
-
-def fmt_hours(h: float) -> str:
-    return f"{h:g} h"
 
 
 # ---------------------------------------------------------------- Excel
@@ -85,8 +78,8 @@ class ReportSection:
     reviewer_comment: str = ""
 
 
-EXPORT_COLUMNS = ["Date", "Task", "Status", "Hours", "Notes", "Assigned By", "Due Date"]
-COLUMN_WIDTHS = [12, 48, 15, 9, 40, 18, 12]
+EXPORT_COLUMNS = ["Date", "Task", "Status", "Notes", "Assigned By", "Due Date"]
+COLUMN_WIDTHS = [12, 48, 15, 40, 18, 12]
 
 _thin = Side(style="thin", color="C8C7C2")
 _BORDER = Border(left=_thin, right=_thin, top=_thin, bottom=_thin)
@@ -120,7 +113,7 @@ def _write_section(ws, section: ReportSection, org: str) -> None:
     summary = [
         ("Total tasks", stats["tasks"]),
         ("Completed", stats["completed"]),
-        ("Total hours", stats["hours"]),
+        ("In progress", stats["in_progress"]),
         ("Completion rate", stats["completion_rate"]),
     ]
     for i, (label, value) in enumerate(summary):
@@ -154,7 +147,6 @@ def _write_section(ws, section: ReportSection, org: str) -> None:
                 r["Date"],
                 r["Task"],
                 r["Status"],
-                None if pd.isna(r["Hours"]) else float(r["Hours"]),
                 r["Notes"],
                 r["Assigned By"],
                 r["Due Date"],
@@ -162,7 +154,7 @@ def _write_section(ws, section: ReportSection, org: str) -> None:
             for col, value in enumerate(values, start=1):
                 cell = ws.cell(row=row, column=col, value=value)
                 cell.border = _BORDER
-                cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 5))
+                cell.alignment = Alignment(vertical="top", wrap_text=col in (2, 4))
                 if isinstance(value, date):
                     cell.number_format = "DD-MMM-YYYY"
             status_cell = ws.cell(row=row, column=3)
@@ -172,7 +164,6 @@ def _write_section(ws, section: ReportSection, org: str) -> None:
 
         week_stats = summarize(rows)
         ws.cell(row=row, column=2, value=f"Week {week} subtotal - {week_stats['completed']}/{week_stats['tasks']} completed")
-        ws.cell(row=row, column=4, value=week_stats["hours"])
         for col in range(1, ncols + 1):
             c = ws.cell(row=row, column=col)
             c.font = Font(bold=True)
@@ -181,8 +172,9 @@ def _write_section(ws, section: ReportSection, org: str) -> None:
         row += 2
 
     if not section.df.empty:
-        ws.cell(row=row, column=2, value="Month total").font = Font(bold=True, size=12)
-        ws.cell(row=row, column=4, value=stats["hours"]).font = Font(bold=True, size=12)
+        ws.cell(
+            row=row, column=2, value=f"Month total - {stats['completed']}/{stats['tasks']} completed"
+        ).font = Font(bold=True, size=12)
 
     for i, width in enumerate(COLUMN_WIDTHS, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width

@@ -20,7 +20,7 @@ def _df(session, admin, alice):
 def test_summary_and_weeks(session, admin, alice):
     df = _df(session, admin, alice)
     stats = summarize(df)
-    assert stats["tasks"] == 3 and stats["completed"] == 1 and stats["hours"] == 3.5
+    assert stats["tasks"] == 3 and stats["completed"] == 1 and stats["in_progress"] == 1
     assert round(stats["completion_rate"], 2) == 0.33
     weeks = weekly_breakdown(df, OCT)
     assert [(w, len(rows)) for w, _, _, rows in weeks] == [(1, 1), (2, 2)]
@@ -29,7 +29,7 @@ def test_summary_and_weeks(session, admin, alice):
 
 def test_empty_summary():
     stats = summarize(tasks_to_df([]))
-    assert stats["tasks"] == 0 and stats["hours"] == 0 and stats["completion_rate"] == 0
+    assert stats["tasks"] == 0 and stats["completion_rate"] == 0
 
 
 def test_excel_export(session, admin, alice, bob):
@@ -41,7 +41,7 @@ def test_excel_export(session, admin, alice, bob):
     assert "Acme - Monthly Progress Report" in values
     assert "Setup" in values and "Audit" in values
     assert any(isinstance(v, str) and v.startswith("Week 2") for v in values)
-    assert 3.5 in values
+    assert "Hours" not in values and "Month total - 1/3 completed" in values
 
     empty = tasks_to_df([])
     multi = load_workbook(

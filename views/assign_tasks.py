@@ -49,7 +49,6 @@ def _tracker(admin) -> None:
                     "Person": t.owner.full_name,
                     "Task": t.title,
                     "Status": t.status,
-                    "Hours": t.hours,
                     "Assigned": t.work_date,
                     "Due": t.due_date,
                     "Overdue": "Overdue" if svc.is_overdue(t) else "",
@@ -69,7 +68,6 @@ def _tracker(admin) -> None:
         shown = df.drop(columns="id").assign(
             Assigned=[f"{d:%d %b %Y}" for d in df["Assigned"]],
             Due=[f"{d:%d %b %Y}" if pd.notna(d) and d else "" for d in df["Due"]],
-            Hours=pd.to_numeric(df["Hours"], errors="coerce"),
         )
         selection = st.dataframe(
             style_table(shown),
