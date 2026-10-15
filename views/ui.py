@@ -84,10 +84,14 @@ _CSS = """
 [data-testid="stSidebarUserContent"] > div > [data-testid="stVerticalBlock"] { min-height: calc(100vh - 2.6rem); }
 [data-testid="stLayoutWrapper"]:has(> .st-key-sidebar_account) { margin-top: auto; }
 [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] { border-radius: 8px; padding: 6px 10px; }
-[data-testid="stSidebarUserContent"] [data-testid="stVerticalBlock"] { gap: .25rem; }
-[data-testid="stSidebarUserContent"] .st-key-sidebar_account { gap: .6rem; }
+/* Streamlit gives markdown a -1rem bottom margin to cancel its default 1rem gap; with the
+   tighter sidebar gap that pulled labels into the next item, so spacing is explicit here. */
+[data-testid="stSidebarUserContent"] [data-testid="stMarkdownContainer"] { margin-bottom: 0; }
+[data-testid="stSidebarUserContent"] [data-testid="stElementContainer"]:has([data-testid="stPageLink"]) { margin: 0; }
+[data-testid="stSidebarUserContent"] [data-testid="stVerticalBlock"] { gap: 2px; }
+[data-testid="stSidebarUserContent"] .st-key-sidebar_account { gap: 10px; }
 [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background: var(--pt-surface-2); }
-.pt-nav-label { margin: 18px 4px 6px; }
+.pt-nav-label { margin: 0; padding: 16px 6px 6px; }
 
 /* Primary buttons: lime fill with dark ink, like the dashboard CTA. The theme's
    primaryColor is the darker olive, used for checkboxes, tabs and focus rings. */
