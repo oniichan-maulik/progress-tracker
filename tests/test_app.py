@@ -73,7 +73,7 @@ def test_wrong_password_rejected(seeded):
 
 
 @pytest.mark.parametrize(
-    "module,username", [("team_review", "admin"), ("assign_tasks", "admin"), ("manage_users", "admin"), ("my_report", "rahul"), ("my_report", "priya")]
+    "module,username", [("team_review", "admin"), ("assign_tasks", "admin"), ("manage_users", "admin"), ("my_report", "rahul"), ("my_report", "priya"), ("my_report", "admin")]
 )
 def test_pages_render(seeded, module, username):
     at = AppTest.from_string(f"from views import {module}\n{module}.page()", default_timeout=TIMEOUT)

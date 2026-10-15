@@ -8,7 +8,7 @@ import streamlit as st
 from core import services as svc
 from core.db import get_session
 from core.reports import summarize, weekly_breakdown
-from views.ui import stat_cards, style_table
+from views.ui import stat_cards, status_pill, style_table
 from core.models import APPROVED, CHANGES_REQUESTED, DRAFT, STATUSES, SUBMITTED, User
 
 REVIEW_BADGES = {
@@ -56,14 +56,13 @@ def show_flash() -> None:
 # ---------------------------------------------------------------- widgets
 
 
-def month_selector(key: str, extra_months: list[str] | None = None) -> str:
+def month_selector(key: str, extra_months: list[str] | None = None, label_visibility: str = "visible") -> str:
     months = sorted(set(svc.recent_months(12)) | set(extra_months or []), reverse=True)
-    return st.selectbox("Month", months, format_func=svc.month_label, key=key)
+    return st.selectbox("Month", months, format_func=svc.month_label, key=key, label_visibility=label_visibility)
 
 
-def review_badge(state: str) -> None:
-    label, color, icon = REVIEW_BADGES.get(state, (state, "gray", None))
-    st.badge(label, color=color, icon=icon)
+def review_pill(state: str) -> str:
+    return status_pill(REVIEW_BADGES.get(state, (state,))[0], state)
 
 
 def metrics_row(stats: dict) -> None:

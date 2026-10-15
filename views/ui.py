@@ -73,7 +73,21 @@ _CSS = """
   }
 }
 
-.block-container { padding-top: 2rem; max-width: 1440px; }
+/* ---- App chrome ---- */
+.block-container { padding: 1.6rem 2.2rem 4rem; max-width: 1360px; }
+[data-testid="stAppDeployButton"] { display: none; }
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stSidebarHeader"] { display: none; }
+[data-testid="stSidebarUserContent"] { padding-top: 1.1rem; }
+
+/* Sidebar: brand on top, navigation, account block pinned to the bottom. */
+[data-testid="stSidebarUserContent"] > div > [data-testid="stVerticalBlock"] { min-height: calc(100vh - 2.6rem); }
+[data-testid="stLayoutWrapper"]:has(> .st-key-sidebar_account) { margin-top: auto; }
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] { border-radius: 8px; padding: 6px 10px; }
+[data-testid="stSidebarUserContent"] [data-testid="stVerticalBlock"] { gap: .25rem; }
+[data-testid="stSidebarUserContent"] .st-key-sidebar_account { gap: .6rem; }
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background: var(--pt-surface-2); }
+.pt-nav-label { margin: 18px 4px 6px; }
 
 /* Primary buttons: lime fill with dark ink, like the dashboard CTA. The theme's
    primaryColor is the darker olive, used for checkboxes, tabs and focus rings. */
@@ -83,21 +97,47 @@ _CSS = """
 }
 [data-testid^="stBaseButton-primary"]:hover { filter: brightness(.94); }
 
-/* Cards: white surface, hairline border, soft shadow. */
-div[data-testid="stForm"], div[data-testid="stExpander"] details {
-  background: var(--pt-surface); border-color: var(--pt-border); border-radius: 12px; box-shadow: var(--pt-shadow);
+/* Cards: keyed containers named card_* get a white surface, hairline border, soft shadow. */
+[class*="st-key-card_"] {
+  background: var(--pt-surface); border: 1px solid var(--pt-border) !important; border-radius: 12px;
+  box-shadow: var(--pt-shadow); padding: 18px 20px !important;
 }
+div[data-testid="stExpander"] details { background: var(--pt-surface); border-color: var(--pt-border); border-radius: 10px; }
+[class*="st-key-card_"] div[data-testid="stExpander"] details { background: transparent; }
+div[data-testid="stForm"] { border-color: var(--pt-border); border-radius: 10px; }
 
 .pt-eyebrow {
   font-size: .66rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--pt-text-3);
 }
-.pt-header { padding: 2px 0 14px; margin-bottom: 14px; border-bottom: 1px solid var(--pt-border); }
-.pt-header-title { font-size: 1.45rem; font-weight: 600; letter-spacing: -.015em; line-height: 1.3; margin-top: 4px; color: var(--pt-text); }
+.pt-header { padding: 2px 0 0; }
+.pt-header-title { font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; margin-top: 4px; color: var(--pt-text); }
 .pt-header-sub { color: var(--pt-text-2); margin-top: 2px; }
+.pt-rule { height: 1px; background: var(--pt-border); margin: 4px 0 18px; }
 
+.pt-card-title { font-size: .98rem; font-weight: 600; letter-spacing: -.01em; color: var(--pt-text); line-height: 1.35; }
+.pt-card-sub { font-size: .8rem; color: var(--pt-text-3); margin-top: 1px; }
+[data-testid="stElementContainer"]:has(> div > div > .pt-card-title),
+[data-testid="stElementContainer"]:has(.pt-card-title) { margin-bottom: 6px; }
 .pt-section { margin: 1.4rem 0 .5rem; padding-bottom: 6px; border-bottom: 1px solid var(--pt-border); }
 
-.pt-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: .2rem 0 1rem; }
+.pt-attention {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 16px;
+  border: 1px solid var(--pt-warning); border-radius: 10px; background: var(--pt-warning-bg); color: var(--pt-text);
+}
+.pt-attention-icon {
+  width: 26px; height: 26px; flex: none; border-radius: 7px; display: grid; place-items: center;
+  background: var(--pt-surface); color: var(--pt-warning);
+}
+.pt-attention b { font-weight: 600; }
+.pt-attention .pt-sep { color: var(--pt-text-3); }
+
+.pt-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  font-size: .74rem; font-weight: 600; white-space: nowrap;
+}
+.pt-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.pt-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 0 0 16px; }
 .pt-stat {
   display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; border-radius: 12px;
   background: var(--pt-surface); border: 1px solid var(--pt-border); box-shadow: var(--pt-shadow);
@@ -106,14 +146,15 @@ div[data-testid="stForm"], div[data-testid="stExpander"] details {
 .pt-stat-value { font-size: 1.5rem; font-weight: 600; letter-spacing: -.015em; line-height: 1.25; font-variant-numeric: tabular-nums; color: var(--pt-text); }
 .pt-stat-hint { font-size: .75rem; color: var(--pt-text-3); }
 
-.pt-brand { display: flex; align-items: center; gap: 10px; padding: 2px 2px 12px; }
+.pt-brand { display: flex; align-items: center; gap: 10px; padding: 0 4px 10px; }
 .pt-mark {
-  width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center;
-  background: var(--pt-accent); color: var(--pt-accent-ink); font-weight: 600; font-size: .9rem;
+  width: 30px; height: 30px; flex: none; border-radius: 8px; display: grid; place-items: center;
+  background: var(--pt-accent); color: var(--pt-accent-ink); font-weight: 700; font-size: .92rem;
 }
-.pt-brand-name { font-size: 1rem; font-weight: 600; letter-spacing: -.01em; }
+.pt-brand-name { font-size: 1rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; overflow-wrap: anywhere; }
+.pt-brand-sub { font-size: .7rem; color: var(--pt-text-3); }
 
-.pt-user { display: flex; gap: 10px; align-items: center; padding: 10px 2px 12px; border-top: 1px solid var(--pt-border); }
+.pt-user { display: flex; gap: 10px; align-items: center; padding: 12px 4px 4px; border-top: 1px solid var(--pt-border); }
 .pt-avatar {
   flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
   font-size: .7rem; font-weight: 600; color: var(--pt-accent-text);
@@ -121,6 +162,8 @@ div[data-testid="stForm"], div[data-testid="stExpander"] details {
 }
 .pt-user-name { font-weight: 500; line-height: 1.25; }
 .pt-user-meta { font-size: .72rem; color: var(--pt-text-3); }
+
+.pt-login { margin-top: 8vh; }
 </style>
 """
 
@@ -139,13 +182,57 @@ def hide_sidebar() -> None:
     )
 
 
-def page_header(title: str, subtitle: str = "", eyebrow: str = "") -> None:
+def page_header(title: str, subtitle: str = "", eyebrow: str = "", controls: int = 0, ratio: float = 2.6):
+    """Title block on the left; returns `controls` columns on the right for filters/actions."""
     top = f'<div class="pt-eyebrow">{escape(eyebrow)}</div>' if eyebrow else ""
     sub = f'<div class="pt-header-sub">{escape(subtitle)}</div>' if subtitle else ""
+    html = f'<div class="pt-header">{top}<div class="pt-header-title">{escape(title)}</div>{sub}</div>'
+    if not controls:
+        st.markdown(html, unsafe_allow_html=True)
+        header_rule()
+        return []
+    cols = st.columns([ratio] + [1] * controls, vertical_alignment="bottom")
+    cols[0].markdown(html, unsafe_allow_html=True)
+    return cols[1:]
+
+
+def header_rule() -> None:
+    st.markdown('<div class="pt-rule"></div>', unsafe_allow_html=True)
+
+
+def card(name: str):
+    """A white card section; `name` must be unique on the page."""
+    return st.container(border=True, key=f"card_{name}")
+
+
+def card_title(title: str, subtitle: str = "") -> None:
+    sub = f'<div class="pt-card-sub">{escape(subtitle)}</div>' if subtitle else ""
+    st.markdown(f'<div class="pt-card-title">{escape(title)}</div>{sub}', unsafe_allow_html=True)
+
+
+def attention(items: list[str]) -> None:
+    """Amber strip listing things that need action, e.g. reports awaiting review."""
+    if not items:
+        return
+    icon = (
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
+        'stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>'
+    )
+    body = ' <span class="pt-sep">·</span> '.join(escape(i) for i in items)
     st.markdown(
-        f'<div class="pt-header">{top}<div class="pt-header-title">{escape(title)}</div>{sub}</div>',
+        f'<div class="pt-attention"><span class="pt-attention-icon">{icon}</span>'
+        f'<span><b>Needs attention</b> <span class="pt-sep">·</span> {body}</span></div>',
         unsafe_allow_html=True,
     )
+
+
+def status_pill(text: str, state: str | None = None) -> str:
+    bg, fg = PILL_STYLES.get(state or text, _NEUTRAL)
+    return f'<span class="pt-pill" style="background:{bg};color:{fg}">{escape(text)}</span>'
+
+
+def nav_label(text: str) -> None:
+    st.markdown(f'<div class="pt-eyebrow pt-nav-label">{escape(text)}</div>', unsafe_allow_html=True)
 
 
 def section(title: str) -> None:
@@ -183,29 +270,11 @@ def user_card(full_name: str, username: str, role: str) -> None:
     )
 
 
-def sidebar_logo(org: str) -> None:
-    """Lime mark + org name at the top of the sidebar, above the page navigation."""
-    mark = escape(org.strip()[:1].upper() or "P")
-    name = escape(org)
-    width = 40 + int(len(org) * 8.6)
-    square = (
-        '<rect width="28" height="28" rx="8" fill="#a3e635"/>'
-        f'<text x="14" y="19" text-anchor="middle" font-family="Geist, system-ui, sans-serif" font-size="14" '
-        f'font-weight="600" fill="#172000">{mark}</text>'
-    )
-    wordmark = (
-        f'<svg viewBox="0 0 {width} 28" width="{width}" height="28">'
-        "<style>.n{fill:#161715}@media (prefers-color-scheme: dark){.n{fill:#f1f2ee}}</style>"
-        f'{square}<text class="n" x="38" y="19" font-family="Geist, system-ui, sans-serif" font-size="15" '
-        f'font-weight="600" letter-spacing="-0.15">{name}</text></svg>'
-    )
-    st.logo(wordmark, size="large", icon_image=f'<svg viewBox="0 0 28 28" width="28" height="28">{square}</svg>')
-
-
-def brand(org: str) -> None:
+def brand(org: str, subtitle: str = "Progress reports") -> None:
     mark = escape(org.strip()[:1].upper() or "P")
     st.markdown(
-        f'<div class="pt-brand"><span class="pt-mark">{mark}</span><span class="pt-brand-name">{escape(org)}</span></div>',
+        f'<div class="pt-brand"><span class="pt-mark">{mark}</span>'
+        f'<span><div class="pt-brand-name">{escape(org)}</div><div class="pt-brand-sub">{escape(subtitle)}</div></span></div>',
         unsafe_allow_html=True,
     )
 
@@ -223,6 +292,10 @@ def _cell(value) -> str:
 
 def style_table(df: pd.DataFrame):
     """Color status / review / account cells and flag overdue dates in a read-only table."""
+    if "Hours" in df:
+        # Streamlit draws empty numeric cells as "None", so hours are rendered as text.
+        hours = pd.to_numeric(df["Hours"], errors="coerce")
+        df = df.assign(Hours=["–" if pd.isna(v) else f"{v:.2f}" for v in hours])
     styler = df.style
     pill_cols = [c for c in ("Status", "Review") if c in df]
     if pill_cols:
@@ -234,5 +307,5 @@ def style_table(df: pd.DataFrame):
             subset=overdue_cols,
         )
     if "Hours" in df:
-        styler = styler.format({"Hours": lambda v: "" if pd.isna(v) else f"{v:.2f}"})
+        styler = styler.set_properties(subset=["Hours"], **{"text-align": "right"})
     return styler

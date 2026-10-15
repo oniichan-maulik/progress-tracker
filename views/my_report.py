@@ -10,18 +10,18 @@ from core.config import org_name
 from core.db import get_session
 from core.models import APPROVED, CHANGES_REQUESTED, DRAFT, NOT_STARTED, SUBMITTED
 from core.reports import ReportSection, build_workbook, summarize, tasks_to_df
-from views.ui import page_header, style_table
 from views.common import (
     STATUS_OPTIONS,
     current_user,
     display_tasks,
     flash,
     metrics_row,
-    review_badge,
+    review_pill,
     to_date,
     to_hours,
     weekly_view,
 )
+from views.ui import card, card_title, header_rule, page_header, style_table
 
 EDITABLE = ["Date", "Task", "Status", "Hours", "Notes"]
 
@@ -43,12 +43,14 @@ def _assigned_panel(user_id: int) -> None:
     if not rows:
         return
     overdue = sum(1 for r in rows if r["Overdue"])
-    title = f"Assigned to you · {len(rows)} open" + (f" · {overdue} overdue" if overdue else "")
-    with st.expander(title, expanded=True, icon=":material/assignment_ind:"):
+    with card("assigned"):
+        card_title(
+            f"Assigned to you · {len(rows)} open" + (f" · {overdue} overdue" if overdue else ""),
+            "Update status and hours for these in the task grid of the month shown.",
+        )
         table = pd.DataFrame(rows)
         table["Due"] = [f"{d:%d %b %Y}" if d else "" for d in table["Due"]]
         st.dataframe(style_table(table), hide_index=True, width="stretch")
-        st.caption("Update status and hours for these tasks in the grid of the month shown.")
 
 
 def _collect_changes(original: pd.DataFrame, edited: pd.DataFrame, default_date: date):
@@ -85,9 +87,9 @@ def _default_date(month: str) -> date:
     return today if first <= today <= last else first
 
 
-def _add_task_form(user, month: str, expanded: bool) -> None:
+def _add_task_form(user, month: str) -> None:
     first, last = svc.month_bounds(month)
-    with st.expander("Add a task", icon=":material/add_task:", expanded=expanded):
+    with st.popover("Add task", icon=":material/add:", width="stretch"):
         with st.form(f"add_task_{month}", clear_on_submit=True, border=False):
             title = st.text_input("Task", max_chars=300)
             c1, c2, c3 = st.columns(3)
@@ -113,8 +115,10 @@ def _task_grid(user, month: str, df: pd.DataFrame) -> None:
     default_date = _default_date(month)
     version = st.session_state.setdefault(f"grid_v_{month}", 0)
 
-    shown = [*EDITABLE, "Assigned By", "Due Date", "Deletion Requested"]
-    grid = df[["id", *shown]].copy()
+    shown = [*EDITABLE, "Assigned By", "Due", "Flag"]
+    grid = df[["id", *EDITABLE, "Assigned By"]].copy()
+    grid["Due"] = [f"{d:%d %b}" if pd.notna(d) and d else "" for d in df["Due Date"]]
+    grid["Flag"] = ["Delete requested" if f else "" for f in df["Deletion Requested"]]
     with st.form(f"grid_form_{month}", border=False):
         edited = st.data_editor(
             grid,
@@ -123,28 +127,31 @@ def _task_grid(user, month: str, df: pd.DataFrame) -> None:
             hide_index=True,
             width="stretch",
             column_order=shown,
-            disabled=["Assigned By", "Due Date", "Deletion Requested"],
+            disabled=["Assigned By", "Due", "Flag"],
             column_config={
                 "Date": st.column_config.DateColumn(
                     min_value=first, max_value=last, default=default_date, format="DD MMM YYYY", required=True
                 ),
                 "Task": st.column_config.TextColumn(width="large", max_chars=300, required=True),
-                "Status": st.column_config.SelectboxColumn(options=STATUS_OPTIONS, default=NOT_STARTED, required=True),
+                "Status": st.column_config.SelectboxColumn(
+                    options=STATUS_OPTIONS, default=NOT_STARTED, required=True, width="small"
+                ),
                 "Hours": st.column_config.NumberColumn(
-                    "Hours", min_value=0, max_value=1000, step=0.25, format="%.2f", help="Time taken, in hours"
+                    "Hours", min_value=0, max_value=1000, step=0.25, format="%.2f", help="Time taken, in hours",
+                    width="small",
                 ),
                 "Notes": st.column_config.TextColumn(width="medium"),
-                "Assigned By": st.column_config.TextColumn(help="Set when an admin assigned this task"),
-                "Due Date": st.column_config.DateColumn(format="DD MMM YYYY"),
-                "Deletion Requested": st.column_config.CheckboxColumn(
-                    "Delete pending", help="You asked to delete this task; waiting for an admin", width="small"
+                "Assigned By": st.column_config.TextColumn(help="Set when an admin assigned this task", width="small"),
+                "Due": st.column_config.TextColumn(width="small"),
+                "Flag": st.column_config.TextColumn(
+                    "", help="You asked to delete this task; waiting for an admin", width="small"
                 ),
             },
         )
         saved = st.form_submit_button("Save changes", type="primary", icon=":material/save:")
     st.caption(
-        "Edit cells directly, or add rows with the **+** below the grid. Completed tasks need their hours. "
-        "Assigned tasks can't be renamed. To remove a task, request deletion below."
+        "Edit cells directly, or add rows with the + below the grid. Completed tasks need their hours. "
+        "Assigned tasks can't be renamed."
     )
 
     if saved:
@@ -166,8 +173,8 @@ def _task_grid(user, month: str, df: pd.DataFrame) -> None:
 def _deletion_panel(user, month: str, df: pd.DataFrame) -> None:
     pending = df[df["Deletion Requested"]]
     available = df[~df["Deletion Requested"]]
-    label = "Request task deletion" + (f" · {len(pending)} pending" if len(pending) else "")
-    with st.expander(label, icon=":material/delete:"):
+    label = "Request deletion" + (f" ({len(pending)})" if len(pending) else "")
+    with st.popover(label, icon=":material/delete:", width="stretch"):
         st.caption("Tasks are only removed once an admin approves the request.")
         if not available.empty:
             options = {int(r["id"]): f"{r['Date']:%d %b} · {r['Task']}" for _, r in available.iterrows()}
@@ -187,9 +194,8 @@ def _deletion_panel(user, month: str, df: pd.DataFrame) -> None:
                         except svc.ServiceError as e:
                             st.error(str(e))
         for _, r in pending.iterrows():
-            c1, c2 = st.columns([4, 1], vertical_alignment="center")
-            c1.markdown(f"**{r['Task']}** · {r['Date']:%d %b} · :orange[waiting for admin]")
-            if c2.button("Cancel request", key=f"cancel_del_{r['id']}"):
+            st.markdown(f"**{r['Task']}** · {r['Date']:%d %b} · :orange[waiting for admin]")
+            if st.button("Cancel this request", key=f"cancel_del_{r['id']}"):
                 with get_session() as s:
                     svc.cancel_deletion_request(s, int(r["id"]), user)
                 flash("Deletion request cancelled.")
@@ -198,17 +204,24 @@ def _deletion_panel(user, month: str, df: pd.DataFrame) -> None:
 
 def page() -> None:
     user = current_user()
-    page_header("My report", "Log your tasks, track progress by week and submit the month for review.", f"{org_name()} · {user.full_name}")
-    _assigned_panel(user.id)
-
     with get_session() as s:
         months_with_tasks = sorted({t.month for t in svc.get_tasks(s, user_id=user.id)})
-    month = st.selectbox(
-        "Month",
-        sorted(set(svc.recent_months(12)) | set(months_with_tasks), reverse=True),
-        format_func=svc.month_label,
-        key="my_month",
+    (month_col,) = page_header(
+        "My report",
+        "Log your tasks, track progress by week and submit the month for review.",
+        f"{org_name()} · {user.full_name}",
+        controls=1,
+        ratio=3.4,
     )
+    with month_col:
+        month = st.selectbox(
+            "Month",
+            sorted(set(svc.recent_months(12)) | set(months_with_tasks), reverse=True),
+            format_func=svc.month_label,
+            key="my_month",
+            label_visibility="collapsed",
+        )
+    header_rule()
 
     with get_session() as s:
         df = tasks_to_df(svc.get_tasks(s, user_id=user.id, month=month))
@@ -216,62 +229,76 @@ def page() -> None:
         reviewer = review.reviewer.full_name if review and review.reviewer else ""
     state = review.state if review else DRAFT
     stats = summarize(df)
-
-    head, badge = st.columns([3, 2], vertical_alignment="center")
-    head.subheader(svc.month_label(month))
-    with badge:
-        review_badge(state)
+    locked = state in (SUBMITTED, APPROVED)
 
     if state == CHANGES_REQUESTED:
         st.warning(f"**{reviewer} requested changes:** {review.comment}", icon=":material/undo:")
     elif state == APPROVED and review.comment:
         st.success(f"**{reviewer}:** {review.comment}", icon=":material/check_circle:")
     elif state == SUBMITTED:
-        st.info("This month is submitted and locked while the head team reviews it.", icon=":material/lock:")
+        st.info("This month is submitted and locked while it's being reviewed.", icon=":material/lock:")
 
     metrics_row(stats)
+    _assigned_panel(user.id)
 
-    tab_grid, tab_weeks = st.tabs(["Tasks", "Weekly breakdown"])
-    with tab_grid:
-        if state in (SUBMITTED, APPROVED):
+    with card("tasks"):
+        head, delete, add = st.columns([3, 1.15, 1], vertical_alignment="center")
+        with head:
+            st.markdown(
+                f'<div class="pt-card-title">Tasks · {svc.month_label(month)}&nbsp;&nbsp;{review_pill(state)}</div>',
+                unsafe_allow_html=True,
+            )
+        if locked:
             if df.empty:
                 st.caption("No tasks this month.")
             else:
                 display_tasks(df)
         else:
-            _add_task_form(user, month, expanded=df.empty)
+            with add:
+                _add_task_form(user, month)
+            with delete:
+                if not df.empty:
+                    _deletion_panel(user, month, df)
+            if df.empty:
+                st.caption("No tasks yet. Use **Add task**, or type straight into the grid below.")
             _task_grid(user, month, df)
-            if not df.empty:
-                _deletion_panel(user, month, df)
-    with tab_weeks:
+
+    with card("weeks"):
+        card_title("Weekly breakdown", "Tasks grouped by week, with completion and hours")
         weekly_view(month, df)
 
-    st.divider()
-    left, right = st.columns(2)
-    with left:
-        if state in (DRAFT, CHANGES_REQUESTED):
-            if st.button(
-                f"Submit {svc.month_label(month)} for review",
-                icon=":material/send:",
+    with card("submit"):
+        text, submit, download = st.columns([2.4, 1.2, 1], vertical_alignment="center")
+        with text:
+            if state in (DRAFT, CHANGES_REQUESTED):
+                card_title("Ready to submit?", "Submitting locks the month until it's approved or sent back. Save grid edits first.")
+            else:
+                card_title(f"Report {REVIEW_LABELS.get(state, state).lower()}", "Download a copy for your records.")
+        with submit:
+            if state in (DRAFT, CHANGES_REQUESTED):
+                if st.button(
+                    "Submit for review", type="primary", icon=":material/send:", disabled=df.empty, width="stretch"
+                ):
+                    try:
+                        with get_session() as s:
+                            svc.submit_month(s, user.id, month)
+                        flash("Report submitted for review.", ":material/send:")
+                        st.rerun()
+                    except svc.ServiceError as e:
+                        st.error(str(e))
+        with download:
+            workbook = build_workbook(
+                [ReportSection(user.full_name, month, state, df, review.comment if review else "")], org_name()
+            )
+            st.download_button(
+                "Download Excel",
+                workbook,
+                file_name=f"{user.username}_{month}_progress.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                icon=":material/download:",
                 disabled=df.empty,
-                help="Locks the month until the head team approves it or sends it back. Save any grid edits first.",
-            ):
-                try:
-                    with get_session() as s:
-                        svc.submit_month(s, user.id, month)
-                    flash("Report submitted for review.", ":material/send:")
-                    st.rerun()
-                except svc.ServiceError as e:
-                    st.error(str(e))
-    with right:
-        workbook = build_workbook(
-            [ReportSection(user.full_name, month, state, df, review.comment if review else "")], org_name()
-        )
-        st.download_button(
-            "Download Excel report",
-            workbook,
-            file_name=f"{user.username}_{month}_progress.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            icon=":material/download:",
-            disabled=df.empty,
-        )
+                width="stretch",
+            )
+
+
+REVIEW_LABELS = {SUBMITTED: "Submitted", APPROVED: "Approved"}

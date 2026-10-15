@@ -236,3 +236,13 @@ def test_migration_adds_new_columns(tmp_path):
     assert {"deletion_requested_at", "deletion_reason"} <= cols
     with engine.connect() as conn:
         assert conn.execute(text("SELECT title FROM tasks")).scalar() == "old row"
+
+
+def test_admin_can_assign_to_self_and_work_on_it(session, admin, alice):
+    tasks = assign_task(session, admin, [admin.id, alice.id], "Plan Q4 goals", today=D)
+    mine = next(t for t in tasks if t.user_id == admin.id)
+    update_task(session, mine.id, admin, status=COMPLETED, hours=2)
+    assert [t.title for t in get_tasks(session, user_id=admin.id)] == ["Plan Q4 goals"]
+    submit_month(session, admin.id, OCT)
+    review_month(session, admin, admin.id, OCT, approve=True)
+    assert review_state(session, admin.id, OCT) == APPROVED
